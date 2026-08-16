@@ -102,6 +102,25 @@ export interface TransactionRecord {
   status: 'completed' | 'pending' | 'failed';
 }
 
+export interface PaymentGatewayConfig {
+  officialUpiId: string;
+  officialPayeeName: string;
+  customQrUrl?: string;
+  activationFee: number;
+  requirePaymentBeforeWithdrawal: boolean;
+  activationNote: string;
+}
+
+export interface SupportConfig {
+  telegramUsername: string;
+  telegramChannelUrl: string;
+  supportEmail: string;
+  supportPhone: string;
+  whatsappNumber?: string;
+  operatingHours: string;
+  isLiveSupportOnline: boolean;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -111,6 +130,7 @@ export interface UserProfile {
   password?: string;
   tier: UserTier;
   vipStatus: VIPStatus;
+  hasPaidActivation?: boolean;
   vipActivatedAt?: string;
   balanceINR: number;
   lifetimeEarningsINR: number;

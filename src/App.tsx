@@ -16,6 +16,7 @@ import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
+import { WithdrawalDetailsModal } from './components/WithdrawalDetailsModal';
 import {
   Bell,
   CheckCircle2,
@@ -128,6 +129,9 @@ const MainContent: React.FC = () => {
 
       {/* Super Admin Passcode Security Gate Modal */}
       <AdminPasscodeModal />
+
+      {/* Full Withdrawal Receipt / Settlement Details Modal */}
+      <WithdrawalDetailsModal />
 
       {/* Floating Toast Notification */}
       {toast && (

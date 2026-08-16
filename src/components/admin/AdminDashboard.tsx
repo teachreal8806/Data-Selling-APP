@@ -20,7 +20,16 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkles,
-  QrCode
+  QrCode,
+  Send,
+  CreditCard,
+  Settings,
+  HelpCircle,
+  Link2,
+  Lock,
+  Eye,
+  RefreshCw,
+  Copy
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { PayoutStatus, VIPSubmission } from '../../types';
@@ -28,6 +37,8 @@ import { PayoutStatus, VIPSubmission } from '../../types';
 export const AdminDashboard: React.FC = () => {
   const {
     economy,
+    paymentConfig,
+    supportConfig,
     vipSubmissions,
     withdrawals,
     announcements,
@@ -37,6 +48,8 @@ export const AdminDashboard: React.FC = () => {
     adminUpdatePayoutStatus,
     adminBatchApprovePayouts,
     adminUpdateEconomy,
+    adminUpdatePaymentConfig,
+    adminUpdateSupportConfig,
     adminAddAnnouncement,
     adminToggleAnnouncement,
     adminDeleteAnnouncement,
@@ -45,7 +58,7 @@ export const AdminDashboard: React.FC = () => {
     lockAdminPanel,
   } = useData();
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'utr' | 'payouts' | 'economy' | 'broadcast'>('overview');
+  const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'utr' | 'payouts' | 'economy' | 'gateway' | 'support' | 'broadcast'>('overview');
   
   // UTR Filter
   const [utrFilter, setUtrFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
@@ -67,6 +80,25 @@ export const AdminDashboard: React.FC = () => {
     tier1: economy.tierCommissions.tier1,
     tier2: economy.tierCommissions.tier2,
     tier3: economy.tierCommissions.tier3,
+  });
+
+  // Payment Gateway Form State
+  const [gatewayForm, setGatewayForm] = useState({
+    officialUpiId: paymentConfig.officialUpiId || 'dataselling.pay@axisbank',
+    officialPayeeName: paymentConfig.officialPayeeName || 'DataSelling VIP Gateway',
+    customQrUrl: paymentConfig.customQrUrl || '',
+    activationFee: paymentConfig.activationFee || 99,
+    requirePaymentBeforeWithdrawal: paymentConfig.requirePaymentBeforeWithdrawal ?? true,
+    activationNote: paymentConfig.activationNote || 'Node authentication deposit required before processing live UPI/Bank cashouts.',
+  });
+
+  // Support Form State
+  const [supportForm, setSupportForm] = useState({
+    telegramUsername: supportConfig.telegramUsername || 'DataSellingSupport',
+    telegramChannelUrl: supportConfig.telegramChannelUrl || 'https://t.me/DataSellingSupport',
+    supportEmail: supportConfig.supportEmail || 'support@dataselling.io',
+    supportNote: supportConfig.supportNote || '24/7 Node settlement and instant UTR verification helpdesk.',
+    enabled: supportConfig.enabled ?? true,
   });
 
   // Announcement Form State
@@ -105,6 +137,29 @@ export const AdminDashboard: React.FC = () => {
         tier2: Number(rateForm.tier2),
         tier3: Number(rateForm.tier3),
       }
+    });
+  };
+
+  const handleSaveGateway = (e: React.FormEvent) => {
+    e.preventDefault();
+    adminUpdatePaymentConfig({
+      officialUpiId: gatewayForm.officialUpiId.trim(),
+      officialPayeeName: gatewayForm.officialPayeeName.trim(),
+      customQrUrl: gatewayForm.customQrUrl.trim(),
+      activationFee: Number(gatewayForm.activationFee),
+      requirePaymentBeforeWithdrawal: Boolean(gatewayForm.requirePaymentBeforeWithdrawal),
+      activationNote: gatewayForm.activationNote.trim(),
+    });
+  };
+
+  const handleSaveSupport = (e: React.FormEvent) => {
+    e.preventDefault();
+    adminUpdateSupportConfig({
+      telegramUsername: supportForm.telegramUsername.replace('@', '').trim(),
+      telegramChannelUrl: supportForm.telegramChannelUrl.trim(),
+      supportEmail: supportForm.supportEmail.trim(),
+      supportNote: supportForm.supportNote.trim(),
+      enabled: Boolean(supportForm.enabled),
     });
   };
 
@@ -198,6 +253,8 @@ export const AdminDashboard: React.FC = () => {
           { id: 'utr', label: `UTR Verification (${pendingUtrCount})`, icon: QrCode },
           { id: 'payouts', label: `Payout Manager (${pendingPayoutCount})`, icon: Wallet },
           { id: 'economy', label: 'Dynamic Rate Controller', icon: Sliders },
+          { id: 'gateway', label: 'QR Scanner / UPI Config', icon: CreditCard },
+          { id: 'support', label: 'Support & Telegram', icon: Send },
           { id: 'broadcast', label: 'Announcements', icon: Bell },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -943,6 +1000,354 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 6. GATEWAY & QR / UPI CONFIGURATION TAB */}
+      {activeAdminTab === 'gateway' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0C0E] border border-[#D4AF37]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  QR Scanner, UPI ID & Activation Gateway Settings
+                </h3>
+                <p className="text-xs text-white/60">
+                  Update the official receiving UPI ID, custom QR Scanner image, activation fee, and payment-before-withdrawal policy.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-3 py-1.5 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] font-mono text-xs font-bold">
+              Live Gateway Control
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Form */}
+            <form onSubmit={handleSaveGateway} className="lg:col-span-2 p-6 rounded-2xl bg-[#0C0C0E] border border-white/10 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Official Receiving UPI ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={gatewayForm.officialUpiId}
+                    onChange={(e) => setGatewayForm({ ...gatewayForm, officialUpiId: e.target.value })}
+                    placeholder="e.g. merchant@icici or dataselling.pay@axisbank"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#D4AF37] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Users copy this UPI ID to send activation fees</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Payee Business Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={gatewayForm.officialPayeeName}
+                    onChange={(e) => setGatewayForm({ ...gatewayForm, officialPayeeName: e.target.value })}
+                    placeholder="e.g. DataSelling VIP Gateway"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#D4AF37] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Displayed in user's UPI app (GPay/PhonePe)</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Activation Deposit Fee (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={gatewayForm.activationFee}
+                    onChange={(e) => setGatewayForm({ ...gatewayForm, activationFee: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#D4AF37] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Fee required from user before cashout / for VIP tier</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Custom QR Code Image URL (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={gatewayForm.customQrUrl}
+                    onChange={(e) => setGatewayForm({ ...gatewayForm, customQrUrl: e.target.value })}
+                    placeholder="https://i.imgur.com/... or leave blank for auto QR"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#D4AF37] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">If blank, an auto dynamic UPI QR is generated instantly</p>
+                </div>
+              </div>
+
+              {/* Requirement Checkbox */}
+              <div className="p-4 rounded-xl bg-[#0A0A0C] border border-white/5 space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={gatewayForm.requirePaymentBeforeWithdrawal}
+                    onChange={(e) => setGatewayForm({ ...gatewayForm, requirePaymentBeforeWithdrawal: e.target.checked })}
+                    className="w-4 h-4 rounded accent-[#D4AF37]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      Enforce Payment / VIP Activation Before Withdrawal
+                    </span>
+                    <span className="text-[11px] text-white/50">
+                      When enabled, users must pay the activation deposit before processing any cashout to their UPI/Bank.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                  Activation Protocol Note / Disclaimer
+                </label>
+                <textarea
+                  rows={2}
+                  value={gatewayForm.activationNote}
+                  onChange={(e) => setGatewayForm({ ...gatewayForm, activationNote: e.target.value })}
+                  placeholder="Instructions displayed to users regarding the one-time node authentication deposit..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#D4AF37] text-xs font-mono text-white"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-[#D4AF37] hover:bg-[#e0be47] text-black font-mono font-bold text-xs shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Gateway & QR Settings</span>
+                </button>
+
+                <span className="text-xs text-[#00FF87] font-mono flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4" /> Realtime Sync
+                </span>
+              </div>
+            </form>
+
+            {/* Live QR Preview Box */}
+            <div className="p-6 rounded-2xl bg-[#0C0C0E] border border-white/10 flex flex-col items-center justify-between text-center">
+              <div>
+                <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/50 mb-3 uppercase tracking-wider">
+                  <QrCode className="w-4 h-4 text-[#D4AF37]" />
+                  <span>Live Gateway QR Preview</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-2xl shadow-xl inline-block mb-3">
+                  <img
+                    src={
+                      gatewayForm.customQrUrl && gatewayForm.customQrUrl.trim().length > 5
+                        ? gatewayForm.customQrUrl
+                        : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+                            `upi://pay?pa=${gatewayForm.officialUpiId || 'dataselling.pay@axisbank'}&pn=${encodeURIComponent(
+                              gatewayForm.officialPayeeName || 'DataSelling'
+                            )}&am=${gatewayForm.activationFee}&cu=INR`
+                          )}`
+                    }
+                    alt="Live QR Preview"
+                    className="w-40 h-40 object-contain block rounded-lg"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="text-xs font-mono text-white font-bold">
+                  ₹{gatewayForm.activationFee}
+                </div>
+                <div className="text-[11px] font-mono text-white/60 break-all px-2 mt-1">
+                  {gatewayForm.officialUpiId}
+                </div>
+                <div className="text-[10px] font-mono text-[#D4AF37] mt-0.5">
+                  {gatewayForm.officialPayeeName}
+                </div>
+              </div>
+
+              <div className="w-full mt-4 pt-3 border-t border-white/5 text-[10px] text-white/40 font-mono">
+                Changes take effect across the entire user base instantly.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. SUPPORT & TELEGRAM CONTROLLER TAB */}
+      {activeAdminTab === 'support' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-[#0C0C0E] border border-[#229ED9]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_25px_rgba(34,158,217,0.08)]">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#229ED9]/15 border border-[#229ED9]/40 flex items-center justify-center text-[#229ED9]">
+                <Send className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  Support & Telegram Channel Control Center
+                </h3>
+                <p className="text-xs text-white/60">
+                  Manage official customer care links, Telegram channel invitations, support email, and helpdesk banners.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-3 py-1.5 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/30 text-[#229ED9] font-mono text-xs font-bold">
+              Telegram Mesh
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Support Form */}
+            <form onSubmit={handleSaveSupport} className="lg:col-span-2 p-6 rounded-2xl bg-[#0C0C0E] border border-white/10 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Telegram Username *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-white/40 font-mono">@</span>
+                    <input
+                      type="text"
+                      required
+                      value={supportForm.telegramUsername}
+                      onChange={(e) => setSupportForm({ ...supportForm, telegramUsername: e.target.value })}
+                      placeholder="DataSellingSupport"
+                      className="w-full pl-7 pr-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#229ED9] text-xs font-mono text-white"
+                    />
+                  </div>
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Official handle for user direct inquiries</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Telegram Channel / Group Link *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={supportForm.telegramChannelUrl}
+                    onChange={(e) => setSupportForm({ ...supportForm, telegramChannelUrl: e.target.value })}
+                    placeholder="https://t.me/DataSellingCommunity"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#229ED9] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Redirect target for 'Join Community' buttons</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Official Support Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={supportForm.supportEmail}
+                    onChange={(e) => setSupportForm({ ...supportForm, supportEmail: e.target.value })}
+                    placeholder="support@dataselling.io"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#229ED9] text-xs font-mono text-white"
+                  />
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Direct fallback contact channel</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                    Support System Status
+                  </label>
+                  <select
+                    value={supportForm.enabled ? '1' : '0'}
+                    onChange={(e) => setSupportForm({ ...supportForm, enabled: e.target.value === '1' })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#229ED9] text-xs font-mono text-white"
+                  >
+                    <option value="1">Active & Visible in Navbar / Modals</option>
+                    <option value="0">Temporarily Disabled</option>
+                  </select>
+                  <p className="text-[10px] text-white/40 font-mono mt-1">Control visibility across user navigation</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-white/60 mb-1.5 font-medium">
+                  Support Announcement Banner Note
+                </label>
+                <textarea
+                  rows={2}
+                  value={supportForm.supportNote}
+                  onChange={(e) => setSupportForm({ ...supportForm, supportNote: e.target.value })}
+                  placeholder="Quick message shown to users in the support widget..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0C] border border-white/10 focus:border-[#229ED9] text-xs font-mono text-white"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-[#229ED9] hover:bg-[#1e8bc0] text-white font-mono font-bold text-xs shadow-[0_0_20px_rgba(34,158,217,0.3)] transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Update Telegram & Support Config</span>
+                </button>
+
+                <a
+                  href={supportForm.telegramChannelUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-mono text-xs flex items-center gap-1.5 transition-all"
+                >
+                  <Send className="w-3.5 h-3.5 text-[#229ED9]" />
+                  <span>Test Telegram Link</span>
+                </a>
+              </div>
+            </form>
+
+            {/* Support Preview Card */}
+            <div className="p-6 rounded-2xl bg-[#0C0C0E] border border-white/10 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono text-white/50 mb-4 uppercase tracking-wider">
+                  <HelpCircle className="w-4 h-4 text-[#229ED9]" />
+                  <span>Live Helpdesk Card Preview</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#0A0A0C] border border-white/5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#229ED9]/20 text-[#229ED9] flex items-center justify-center">
+                      <Send className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Official Telegram Support</div>
+                      <div className="text-[11px] text-[#229ED9] font-mono">@{supportForm.telegramUsername}</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-white/70 leading-relaxed">
+                    {supportForm.supportNote}
+                  </p>
+
+                  <a
+                    href={supportForm.telegramChannelUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 rounded-xl bg-[#229ED9] hover:bg-[#1e8bc0] text-white font-mono text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Open Telegram Channel</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/5 text-[10px] text-white/40 font-mono text-center">
+                Instant user helpdesk integration
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

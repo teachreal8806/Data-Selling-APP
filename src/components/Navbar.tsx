@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Crown,
   Lock,
-  Activity
+  Activity,
+  HelpCircle
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
@@ -242,20 +243,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                     <span>VIP Membership</span>
                   </button>
 
-                  {/* Super Admin Access */}
                   <button
                     onClick={() => {
+                      setActiveTab('diagnostics');
                       setDropdownOpen(false);
-                      if (isAdminUnlocked) {
-                        setActiveView(activeView === 'admin' ? 'user' : 'admin');
-                      } else {
-                        setAdminPasscodeModalOpen(true);
-                      }
                     }}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-cyan-300 hover:bg-cyan-500/10 transition-all text-left"
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/5 transition-all text-left"
                   >
-                    <Shield className="w-4 h-4 text-cyan-400" />
-                    <span>{isAdminUnlocked ? 'Toggle Super Admin' : 'Admin Security Gate'}</span>
+                    <HelpCircle className="w-4 h-4 text-cyan-400" />
+                    <span>Help & Telegram Support</span>
                   </button>
 
                   <div className="my-1 border-t border-white/10" />

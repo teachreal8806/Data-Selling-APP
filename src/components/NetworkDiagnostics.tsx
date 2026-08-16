@@ -10,12 +10,16 @@ import {
   RefreshCw,
   Sparkles,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Send,
+  HelpCircle,
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export const NetworkDiagnostics: React.FC = () => {
-  const { user, telemetry, triggerAIAdvisor, notifyToast } = useData();
+  const { user, telemetry, supportConfig, triggerAIAdvisor, notifyToast } = useData();
   const [testingPing, setTestingPing] = useState(false);
   const [pingResult, setPingResult] = useState<number>(telemetry.latencyMs);
 
@@ -32,6 +36,48 @@ export const NetworkDiagnostics: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Official Telegram Helpdesk Banner */}
+      {supportConfig.enabled && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-[#229ED9]/15 via-[#0C0C0E] to-[#0C0C0E] border border-[#229ED9]/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-[0_0_25px_rgba(34,158,217,0.08)]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#229ED9]/20 border border-[#229ED9]/40 flex items-center justify-center text-[#229ED9] shrink-0">
+              <Send className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Official Telegram Support & Community
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#229ED9]/20 text-[#229ED9] border border-[#229ED9]/30">
+                  24/7 ONLINE
+                </span>
+              </div>
+              <p className="text-xs text-white/70 mt-1 max-w-xl">
+                {supportConfig.supportNote || 'Need help with payout settlements, node setup, or VIP activation? Connect with our official team on Telegram.'}
+              </p>
+              <div className="text-[11px] font-mono text-white/50 mt-1 flex items-center gap-3">
+                <span>Handle: <strong className="text-white">@{supportConfig.telegramUsername}</strong></span>
+                <span>•</span>
+                <span>Email: <strong className="text-white">{supportConfig.supportEmail}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <a
+              href={supportConfig.telegramChannelUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#229ED9] hover:bg-[#1e8bc0] text-white font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,158,217,0.3)] transition-all active:scale-95"
+            >
+              <Send className="w-4 h-4" />
+              <span>Join Telegram Group</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Node Health Banner */}
       <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">

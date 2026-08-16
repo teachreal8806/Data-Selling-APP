@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, KeyRound, AlertTriangle, CheckCircle2, X, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Shield, Lock, KeyRound, AlertTriangle, X, Eye, EyeOff } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export const AdminPasscodeModal: React.FC = () => {
@@ -30,11 +30,6 @@ export const AdminPasscodeModal: React.FC = () => {
         setInputPassword('');
       }
     }, 400);
-  };
-
-  const handleQuickDemoKey = () => {
-    setInputPassword('ADMINPANELDEEPAKSQW');
-    setError('');
   };
 
   return (
@@ -132,15 +127,6 @@ export const AdminPasscodeModal: React.FC = () => {
                   <span>Unlock Admin Governance</span>
                 </>
               )}
-            </button>
-
-            {/* Quick autofill helper */}
-            <button
-              type="button"
-              onClick={handleQuickDemoKey}
-              className="text-[11px] font-mono text-white/40 hover:text-[#D4AF37] text-center transition-colors"
-            >
-              Autofill Key: <span className="font-bold text-[#D4AF37]">ADMINPANELDEEPAKSQW</span>
             </button>
           </div>
         </form>

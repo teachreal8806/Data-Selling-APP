@@ -11,12 +11,22 @@ import {
   Clock,
   ExternalLink,
   Flame,
-  Check
+  Check,
+  Send,
+  HelpCircle
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export const VIPUpgradeModal: React.FC = () => {
-  const { user, economy, submitVIPPayment, vipSubmissions, adminApproveVIP, notifyToast, setActiveView } = useData();
+  const {
+    user,
+    economy,
+    paymentConfig,
+    supportConfig,
+    submitVIPPayment,
+    vipSubmissions,
+    notifyToast
+  } = useData();
   const [upiIdInput, setUpiIdInput] = useState(user.upiId || 'aarav99@oksbi');
   const [utrNumber, setUtrNumber] = useState('');
   const [copied, setCopied] = useState(false);
@@ -27,15 +37,19 @@ export const VIPUpgradeModal: React.FC = () => {
     (s) => (s.userId === user.id || s.userName === user.name) && s.status === 'pending'
   );
 
-  const officialUPI = 'dataselling.pay@axisbank';
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    `upi://pay?pa=${officialUPI}&pn=DataSelling%20VIP&am=${economy.vipActivationFee}&cu=INR`
-  )}`;
+  const officialUPI = paymentConfig.officialUpiId || 'dataselling.pay@axisbank';
+  const fee = paymentConfig.activationFee || economy.vipActivationFee || 99;
+
+  const qrUrl = paymentConfig.customQrUrl && paymentConfig.customQrUrl.trim().length > 5
+    ? paymentConfig.customQrUrl
+    : `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+        `upi://pay?pa=${officialUPI}&pn=${encodeURIComponent(paymentConfig.officialPayeeName || 'DataSelling Mesh')}&am=${fee}&cu=INR`
+      )}`;
 
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(officialUPI);
     setCopied(true);
-    notifyToast('Official VIP UPI ID copied to clipboard!', 'info');
+    notifyToast('Official Gateway UPI ID copied to clipboard!', 'info');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -68,14 +82,14 @@ export const VIPUpgradeModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-white tracking-tight">
-                  VIP Node Tier Activation
+                  VIP Node Tier & Withdrawal Activation
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-[#D4AF37] text-black">
-                  ₹{economy.vipActivationFee} One-Time
+                  ₹{fee} One-Time
                 </span>
               </div>
               <p className="text-xs text-white/60 mt-1 max-w-xl">
-                Unlock high-frequency packet allocation, instant automated UPI withdrawals 24/7, and an unconditional +15% yield multiplier on all shared gigabytes.
+                Unlock automated UPI withdrawals 24/7, priority packet allocation, and an unconditional +15% yield multiplier on all shared bandwidth.
               </p>
             </div>
           </div>
@@ -130,7 +144,7 @@ export const VIPUpgradeModal: React.FC = () => {
               <h4 className="font-bold text-[#D4AF37] tracking-tight flex items-center gap-1.5">
                 <Crown className="w-4 h-4 text-[#D4AF37]" /> VIP Prime Node
               </h4>
-              <span className="text-xs text-[#D4AF37]/70 font-mono">₹{economy.vipActivationFee} Lifetime License</span>
+              <span className="text-xs text-[#D4AF37]/70 font-mono">₹{fee} Lifetime License</span>
             </div>
             <span className="text-xs font-mono px-2 py-1 rounded bg-[#D4AF37]/20 text-[#D4AF37] font-bold">15% Higher Yield</span>
           </div>
@@ -158,33 +172,47 @@ export const VIPUpgradeModal: React.FC = () => {
       {/* Activation Steps & Payment Interface */}
       {!isVIP && (
         <div className="p-6 rounded-2xl bg-[#0C0C0E] border border-white/10 space-y-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-            <h3 className="text-base font-bold text-white tracking-tight">
-              2-Step VIP Activation Procedure
-            </h3>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+              <h3 className="text-base font-bold text-white tracking-tight">
+                2-Step Instant Activation Gateway
+              </h3>
+            </div>
+
+            {supportConfig.telegramChannelUrl && (
+              <a
+                href={supportConfig.telegramChannelUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/25 text-xs font-mono font-medium transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Telegram Support @{supportConfig.telegramUsername}</span>
+              </a>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Step 1: Scan & Pay */}
             <div className="p-4 rounded-xl bg-[#0A0A0C] border border-white/5 flex flex-col items-center text-center">
               <span className="px-2.5 py-0.5 rounded bg-white/10 text-[10px] font-mono font-bold text-white/80 mb-3">
-                STEP 1: SCAN & PAY ₹{economy.vipActivationFee}
+                STEP 1: SCAN & PAY ₹{fee}
               </span>
 
               {/* QR Code Container */}
               <div className="p-3 bg-white rounded-xl shadow-lg mb-3 inline-block">
                 <img
                   src={qrUrl}
-                  alt="UPI QR Code"
-                  className="w-40 h-40 block"
+                  alt="Official UPI QR Code"
+                  className="w-40 h-40 object-contain block rounded-lg"
                   referrerPolicy="no-referrer"
                 />
               </div>
 
               <div className="w-full space-y-2">
                 <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0C0C0E] border border-white/10 text-xs font-mono">
-                  <span className="text-white/60 truncate">{officialUPI}</span>
+                  <span className="text-white/80 font-bold truncate">{officialUPI}</span>
                   <button
                     onClick={handleCopyUPI}
                     className="p-1 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0 ml-2"
@@ -192,8 +220,11 @@ export const VIPUpgradeModal: React.FC = () => {
                     {copied ? <Check className="w-3.5 h-3.5 text-[#00FF87]" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-white/40 font-mono">
-                  Supports GPay, PhonePe, Paytm, CRED, Amazon Pay, BHIM.
+                <p className="text-[11px] text-white/50 font-mono">
+                  {paymentConfig.officialPayeeName || 'DataSelling Secure Mesh Protocol'}
+                </p>
+                <p className="text-[10px] text-white/40 font-mono">
+                  Supports Google Pay, PhonePe, Paytm, CRED, BHIM, Amazon Pay.
                 </p>
               </div>
             </div>
@@ -206,7 +237,7 @@ export const VIPUpgradeModal: React.FC = () => {
                 </span>
 
                 <p className="text-xs text-white/70 mb-4">
-                  After completing the ₹99 payment in your UPI app, find the 12-digit <strong>UTR / UPI Transaction ID</strong> in transaction details and paste it below.
+                  After completing the ₹{fee} payment in your UPI app, enter your 12-digit <strong>UTR / UPI Ref Number</strong> below for automatic clearance.
                 </p>
 
                 {myPendingSubmission ? (
@@ -218,30 +249,26 @@ export const VIPUpgradeModal: React.FC = () => {
                     <p className="text-white/80">
                       Submitted UTR: <strong className="text-white">{myPendingSubmission.utrNumber}</strong>
                     </p>
-                    <p className="text-[11px] text-white/40">
-                      Admin operators verify UTRs every 5-10 minutes.
+                    <p className="text-[11px] text-white/50">
+                      Our automated ledger audits incoming UPI settlements every few minutes.
                     </p>
-                    <div className="pt-2 flex gap-2">
-                      <button
-                        onClick={() => adminApproveVIP(myPendingSubmission.id)}
-                        className="px-3 py-1.5 rounded-lg bg-[#D4AF37] text-black font-bold text-xs hover:bg-[#e0be47] transition-all flex items-center gap-1 shadow-sm"
+                    {supportConfig.telegramChannelUrl && (
+                      <a
+                        href={supportConfig.telegramChannelUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#229ED9]/20 text-[#229ED9] hover:bg-[#229ED9]/30 text-xs font-bold transition-colors mt-2"
                       >
-                        <Sparkles className="w-3 h-3" />
-                        <span>Instant Auto-Approve (Demo)</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveView('admin')}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 text-white/80 text-xs hover:bg-white/20 transition-all"
-                      >
-                        View in Admin Panel →
-                      </button>
-                    </div>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Contact Telegram Support for Fast Clearance</span>
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <div>
                       <label className="block text-[11px] font-mono text-white/40 mb-1">
-                        Your UPI ID (For Confirmation)
+                        Your UPI ID (For Verification)
                       </label>
                       <input
                         type="text"
@@ -260,7 +287,7 @@ export const VIPUpgradeModal: React.FC = () => {
                       <input
                         type="text"
                         required
-                        maxLength={16}
+                        maxLength={18}
                         value={utrNumber}
                         onChange={(e) => setUtrNumber(e.target.value)}
                         placeholder="e.g. 423984019284"
@@ -278,7 +305,7 @@ export const VIPUpgradeModal: React.FC = () => {
                       ) : (
                         <>
                           <Crown className="w-4 h-4" />
-                          <span>Submit UTR for VIP Activation</span>
+                          <span>Submit UTR for Node Activation</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -287,9 +314,16 @@ export const VIPUpgradeModal: React.FC = () => {
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-white/40 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#00FF87]" />
-                <span>100% Encrypted & Authenticated Gateway</span>
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/40 font-mono">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#00FF87]" />
+                  100% Encrypted Gateway
+                </span>
+                {supportConfig.telegramUsername && (
+                  <span className="text-[#229ED9]">
+                    Telegram: @{supportConfig.telegramUsername}
+                  </span>
+                )}
               </div>
             </div>
           </div>

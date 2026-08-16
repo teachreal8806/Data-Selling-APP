@@ -11,7 +11,9 @@ import {
   NetworkTelemetry,
   QuickSellPackage,
   PayoutStatus,
-  PayoutMethod
+  PayoutMethod,
+  PaymentGatewayConfig,
+  SupportConfig
 } from '../types';
 import { soundEngine } from '../utils/audio';
 
@@ -38,6 +40,25 @@ const INITIAL_ECONOMY: EconomySettings = {
   surgeMultiplier: 1.5,
   surgeActive: false,
   surgeLabel: '🔥 1.5x Peak Hour Surge Active',
+};
+
+export const INITIAL_PAYMENT_CONFIG: PaymentGatewayConfig = {
+  officialUpiId: 'dataselling.pay@axisbank',
+  officialPayeeName: 'DataSelling Secure Mesh Protocol',
+  customQrUrl: '',
+  activationFee: 99,
+  requirePaymentBeforeWithdrawal: true,
+  activationNote: 'One-time node authentication & instant payout verification fee',
+};
+
+export const INITIAL_SUPPORT_CONFIG: SupportConfig = {
+  telegramUsername: 'DataSellingOfficial',
+  telegramChannelUrl: 'https://t.me/dataselling_official_node',
+  supportEmail: 'support@dataselling.io',
+  supportPhone: '+91 98765 43210',
+  whatsappNumber: '+91 98765 43210',
+  operatingHours: '24/7 Live Support & Telegram Priority Desk',
+  isLiveSupportOnline: true,
 };
 
 const INITIAL_USER: UserProfile = {
@@ -205,6 +226,8 @@ export const ADMIN_MASTER_KEY = 'ADMINPANELDEEPAKSQW';
 interface DataContextType {
   user: UserProfile;
   economy: EconomySettings;
+  paymentConfig: PaymentGatewayConfig;
+  supportConfig: SupportConfig;
   vipSubmissions: VIPSubmission[];
   withdrawals: WithdrawalRequest[];
   referrals: ReferralMember[];
@@ -219,12 +242,15 @@ interface DataContextType {
   toggleDataSharing: () => void;
   quickSell: (pkg: QuickSellPackage) => boolean;
   submitVIPPayment: (data: { upiId: string; utrNumber: string }) => boolean;
-  requestWithdrawal: (amount: number, method: PayoutMethod, paymentDetail: string) => { success: boolean; message: string };
+  submitActivationPayment: (data: { upiId: string; utrNumber: string }) => boolean;
+  requestWithdrawal: (amount: number, method: PayoutMethod, paymentDetail: string) => { success: boolean; message: string; requirePayment?: boolean };
   adminApproveVIP: (submissionId: string) => void;
   adminRejectVIP: (submissionId: string, reason: string) => void;
   adminUpdatePayoutStatus: (withdrawalId: string, status: PayoutStatus, txnRef?: string) => void;
   adminBatchApprovePayouts: (withdrawalIds: string[]) => void;
   adminUpdateEconomy: (newSettings: Partial<EconomySettings>) => void;
+  adminUpdatePaymentConfig: (newSettings: Partial<PaymentGatewayConfig>) => void;
+  adminUpdateSupportConfig: (newSettings: Partial<SupportConfig>) => void;
   adminAddAnnouncement: (item: Omit<SystemAnnouncement, 'id' | 'createdAt'>) => void;
   adminToggleAnnouncement: (id: string) => void;
   adminDeleteAnnouncement: (id: string) => void;
@@ -235,6 +261,8 @@ interface DataContextType {
   setShowAIModal: (show: boolean) => void;
   notifyToast: (message: string, type?: 'success' | 'info' | 'error' | 'gold') => void;
   toast: { message: string; type: 'success' | 'info' | 'error' | 'gold' } | null;
+  selectedWithdrawalDetail: WithdrawalRequest | null;
+  setSelectedWithdrawalDetail: (wd: WithdrawalRequest | null) => void;
   // Auth state & methods
   isAuthenticated: boolean;
   authModalOpen: boolean;
@@ -294,6 +322,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return INITIAL_ECONOMY;
     }
   });
+
+  const [paymentConfig, setPaymentConfig] = useState<PaymentGatewayConfig>(() => {
+    try {
+      const saved = localStorage.getItem('dataselling_payment_config');
+      return saved ? JSON.parse(saved) : INITIAL_PAYMENT_CONFIG;
+    } catch {
+      return INITIAL_PAYMENT_CONFIG;
+    }
+  });
+
+  const [supportConfig, setSupportConfig] = useState<SupportConfig>(() => {
+    try {
+      const saved = localStorage.getItem('dataselling_support_config');
+      return saved ? JSON.parse(saved) : INITIAL_SUPPORT_CONFIG;
+    } catch {
+      return INITIAL_SUPPORT_CONFIG;
+    }
+  });
+
+  const [selectedWithdrawalDetail, setSelectedWithdrawalDetail] = useState<WithdrawalRequest | null>(null);
 
   const [vipSubmissions, setVipSubmissions] = useState<VIPSubmission[]>(() => {
     try {
@@ -541,16 +589,57 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(prev => ({
       ...prev,
+      hasPaidActivation: true,
       vipStatus: 'pending_verification',
       upiId: data.upiId || prev.upiId
     }));
 
-    notifyToast('🎉 UTR reference submitted! Admin verification takes 5-15 mins. (You can approve instantly in Admin Panel).', 'gold');
+    notifyToast('🎉 UTR reference submitted! Admin verification takes 5-15 mins.', 'gold');
     return true;
   }, [user, economy.vipActivationFee, notifyToast]);
 
+  const submitActivationPayment = useCallback((data: { upiId: string; utrNumber: string }) => {
+    if (!data.utrNumber || data.utrNumber.length < 8) {
+      notifyToast('Please enter a valid 12-digit UTR transaction reference number.', 'error');
+      return false;
+    }
+
+    soundEngine.playClick();
+
+    const newSubmission: VIPSubmission = {
+      id: `act-sub-${Date.now()}`,
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      upiId: data.upiId || user.upiId,
+      utrNumber: data.utrNumber.trim(),
+      amount: paymentConfig.activationFee,
+      submittedAt: new Date().toISOString(),
+      status: 'pending',
+    };
+
+    setVipSubmissions(prev => [newSubmission, ...prev]);
+
+    setUser(prev => ({
+      ...prev,
+      hasPaidActivation: true,
+      vipStatus: 'pending_verification',
+      upiId: data.upiId || prev.upiId
+    }));
+
+    notifyToast('🎉 Node verification UTR submitted! Payout channel is being authorized.', 'gold');
+    return true;
+  }, [user, paymentConfig.activationFee, notifyToast]);
+
   const requestWithdrawal = useCallback((amount: number, method: PayoutMethod, paymentDetail: string) => {
     const isVIP = user.tier === 'vip';
+    const isActivationPaid = Boolean(user.hasPaidActivation || user.vipStatus === 'active' || user.tier === 'vip');
+
+    if (paymentConfig.requirePaymentBeforeWithdrawal && !isActivationPaid) {
+      notifyToast(`⚠️ Activation verification required before withdrawal. Please complete one-time node authentication (₹${paymentConfig.activationFee}).`, 'gold');
+      return { success: false, message: 'Activation verification payment required.', requirePayment: true };
+    }
+
     const minRequired = isVIP ? economy.vipMinWithdrawal : economy.standardMinWithdrawal;
 
     if (amount < minRequired) {
@@ -602,7 +691,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     notifyToast(`₹${amount} withdrawal requested! ${isVIP ? 'VIP Instant Queue priority.' : 'Standard 24-hr batch cycle.'}`, isVIP ? 'gold' : 'success');
     return { success: true, message: 'Withdrawal successfully queued.' };
-  }, [user, economy, notifyToast]);
+  }, [user, economy, paymentConfig, notifyToast]);
 
   // Admin Actions
   const adminApproveVIP = useCallback((submissionId: string) => {
@@ -702,6 +791,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adminUpdateEconomy = useCallback((newSettings: Partial<EconomySettings>) => {
     setEconomy(prev => ({ ...prev, ...newSettings }));
     notifyToast('Economy metrics updated in real-time.', 'success');
+  }, [notifyToast]);
+
+  const adminUpdatePaymentConfig = useCallback((newSettings: Partial<PaymentGatewayConfig>) => {
+    setPaymentConfig(prev => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem('dataselling_payment_config', JSON.stringify(updated));
+      return updated;
+    });
+    notifyToast('✅ Payment gateway & QR configuration updated!', 'success');
+  }, [notifyToast]);
+
+  const adminUpdateSupportConfig = useCallback((newSettings: Partial<SupportConfig>) => {
+    setSupportConfig(prev => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem('dataselling_support_config', JSON.stringify(updated));
+      return updated;
+    });
+    notifyToast('✅ Live support desk settings updated!', 'success');
   }, [notifyToast]);
 
   const adminAddAnnouncement = useCallback((item: Omit<SystemAnnouncement, 'id' | 'createdAt'>) => {
@@ -885,6 +992,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         economy,
+        paymentConfig,
+        supportConfig,
         vipSubmissions,
         withdrawals,
         referrals,
@@ -899,12 +1008,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleDataSharing,
         quickSell,
         submitVIPPayment,
+        submitActivationPayment,
         requestWithdrawal,
         adminApproveVIP,
         adminRejectVIP,
         adminUpdatePayoutStatus,
         adminBatchApprovePayouts,
         adminUpdateEconomy,
+        adminUpdatePaymentConfig,
+        adminUpdateSupportConfig,
         adminAddAnnouncement,
         adminToggleAnnouncement,
         adminDeleteAnnouncement,
@@ -915,6 +1027,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setShowAIModal,
         notifyToast,
         toast,
+        selectedWithdrawalDetail,
+        setSelectedWithdrawalDetail,
         isAuthenticated,
         authModalOpen,
         authModalTab,
