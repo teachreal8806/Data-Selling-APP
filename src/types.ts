@@ -108,6 +108,7 @@ export interface UserProfile {
   email: string;
   phone: string;
   upiId: string;
+  password?: string;
   tier: UserTier;
   vipStatus: VIPStatus;
   vipActivatedAt?: string;

@@ -11,7 +11,7 @@ export const PWAInstallBanner: React.FC = () => {
 
   const handleInstall = () => {
     setInstalled(true);
-    notifyToast('DataRefine PWA saved to Home Screen! Background sharing enabled.', 'success');
+    notifyToast('Data Selling PWA saved to Home Screen! Background monetization enabled.', 'success');
     setTimeout(() => setDismissed(true), 1500);
   };
 
@@ -23,13 +23,13 @@ export const PWAInstallBanner: React.FC = () => {
         </div>
         <div>
           <div className="font-bold text-white tracking-tight flex items-center gap-1.5">
-            <span>Install DataRefine PWA App</span>
+            <span>Install Data Selling App</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#00FF87]/20 text-[#00FF87] font-mono">
-              V2.4
+              V3.0
             </span>
           </div>
           <p className="text-[11px] text-white/40 font-mono">
-            Enable 24/7 background bandwidth mining even when your browser tab is closed.
+            Enable 24/7 background bandwidth monetization even when your browser is in the background.
           </p>
         </div>
       </div>

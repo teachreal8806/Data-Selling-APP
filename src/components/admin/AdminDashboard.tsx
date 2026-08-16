@@ -42,6 +42,7 @@ export const AdminDashboard: React.FC = () => {
     adminDeleteAnnouncement,
     exportPayoutsCSV,
     notifyToast,
+    lockAdminPanel,
   } = useData();
 
   const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'utr' | 'payouts' | 'economy' | 'broadcast'>('overview');
@@ -148,7 +149,7 @@ export const AdminDashboard: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white tracking-tight">
-                Lumina Nexus Governance & Control
+                Data Selling Governance & Control
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#D4AF37] text-black">
                 SUPER ADMIN
@@ -160,8 +161,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Global Action Badges */}
-        <div className="flex items-center gap-2 font-mono text-xs">
+        {/* Global Action Badges & Exit Lock */}
+        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+          <button
+            onClick={lockAdminPanel}
+            className="px-3.5 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 font-bold flex items-center gap-1.5 transition-all"
+            title="Lock and return to user view"
+          >
+            <span>🔒 Lock & Exit Admin</span>
+          </button>
           {pendingUtrCount > 0 && (
             <button
               onClick={() => setActiveAdminTab('utr')}

@@ -1,6 +1,6 @@
 {
-  "name": "DataRefine - Lumina Nexus",
-  "description": "AI-Native Data Monetization Ecosystem featuring real-time bandwidth sharing, VIP payout tiers, and an administrative telemetry control panel.",
+  "name": "Data Selling",
+  "description": "Autonomous Data Selling & Bandwidth Monetization Ecosystem featuring real-time data sharing, instant UPI withdrawals, VIP multiplier, and high-yield passive income.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

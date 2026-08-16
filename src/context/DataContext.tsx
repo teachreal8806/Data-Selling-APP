@@ -200,6 +200,8 @@ const INITIAL_ANNOUNCEMENTS: SystemAnnouncement[] = [
   }
 ];
 
+export const ADMIN_MASTER_KEY = 'ADMINPANELDEEPAKSQW';
+
 interface DataContextType {
   user: UserProfile;
   economy: EconomySettings;
@@ -233,6 +235,25 @@ interface DataContextType {
   setShowAIModal: (show: boolean) => void;
   notifyToast: (message: string, type?: 'success' | 'info' | 'error' | 'gold') => void;
   toast: { message: string; type: 'success' | 'info' | 'error' | 'gold' } | null;
+  // Auth state & methods
+  isAuthenticated: boolean;
+  authModalOpen: boolean;
+  authModalTab: 'login' | 'register' | 'forgot';
+  setAuthModalOpen: (open: boolean) => void;
+  setAuthModalTab: (tab: 'login' | 'register' | 'forgot') => void;
+  userProfileModalOpen: boolean;
+  setUserProfileModalOpen: (open: boolean) => void;
+  login: (emailOrPhone: string, password: string) => { success: boolean; message: string };
+  register: (data: { name: string; email: string; phone: string; password: string; upiId?: string; referralCode?: string }) => { success: boolean; message: string };
+  forgotPassword: (emailOrPhone: string, newPassword?: string) => { success: boolean; message: string };
+  logout: () => void;
+  updateProfile: (data: Partial<UserProfile>) => void;
+  // Admin passcode methods
+  adminPasscodeModalOpen: boolean;
+  setAdminPasscodeModalOpen: (open: boolean) => void;
+  isAdminUnlocked: boolean;
+  verifyAdminPassword: (password: string) => boolean;
+  lockAdminPanel: () => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -241,16 +262,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Load saved state or default
   const [user, setUser] = useState<UserProfile>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_user');
+      const saved = localStorage.getItem('dataselling_user') || localStorage.getItem('datarefine_user');
       return saved ? JSON.parse(saved) : INITIAL_USER;
     } catch {
       return INITIAL_USER;
     }
   });
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const auth = localStorage.getItem('dataselling_is_auth');
+      return auth !== null ? JSON.parse(auth) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [userProfileModalOpen, setUserProfileModalOpen] = useState<boolean>(false);
+  
+  // Admin lock state
+  const [adminPasscodeModalOpen, setAdminPasscodeModalOpen] = useState<boolean>(false);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+
   const [economy, setEconomy] = useState<EconomySettings>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_economy');
+      const saved = localStorage.getItem('dataselling_economy') || localStorage.getItem('datarefine_economy');
       return saved ? JSON.parse(saved) : INITIAL_ECONOMY;
     } catch {
       return INITIAL_ECONOMY;
@@ -259,7 +297,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [vipSubmissions, setVipSubmissions] = useState<VIPSubmission[]>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_vip_subs');
+      const saved = localStorage.getItem('dataselling_vip_subs') || localStorage.getItem('datarefine_vip_subs');
       return saved ? JSON.parse(saved) : INITIAL_VIP_SUBMISSIONS;
     } catch {
       return INITIAL_VIP_SUBMISSIONS;
@@ -268,7 +306,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_withdrawals');
+      const saved = localStorage.getItem('dataselling_withdrawals') || localStorage.getItem('datarefine_withdrawals');
       return saved ? JSON.parse(saved) : INITIAL_WITHDRAWALS;
     } catch {
       return INITIAL_WITHDRAWALS;
@@ -277,7 +315,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [referrals, setReferrals] = useState<ReferralMember[]>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_referrals');
+      const saved = localStorage.getItem('dataselling_referrals') || localStorage.getItem('datarefine_referrals');
       return saved ? JSON.parse(saved) : INITIAL_REFERRALS;
     } catch {
       return INITIAL_REFERRALS;
@@ -286,7 +324,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [transactions, setTransactions] = useState<TransactionRecord[]>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_transactions');
+      const saved = localStorage.getItem('dataselling_transactions') || localStorage.getItem('datarefine_transactions');
       return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
     } catch {
       return INITIAL_TRANSACTIONS;
@@ -295,7 +333,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>(() => {
     try {
-      const saved = localStorage.getItem('datarefine_announcements');
+      const saved = localStorage.getItem('dataselling_announcements') || localStorage.getItem('datarefine_announcements');
       return saved ? JSON.parse(saved) : INITIAL_ANNOUNCEMENTS;
     } catch {
       return INITIAL_ANNOUNCEMENTS;
@@ -303,7 +341,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [activeView, setActiveView] = useState<'user' | 'admin'>('user');
-  const [activeTab, setActiveTab] = useState<string>('refinery');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [showAIModal, setShowAIModal] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' | 'gold' } | null>(null);
 
@@ -328,27 +366,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync to localStorage
   useEffect(() => {
-    localStorage.setItem('datarefine_user', JSON.stringify(user));
+    localStorage.setItem('dataselling_user', JSON.stringify(user));
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('datarefine_economy', JSON.stringify(economy));
+    localStorage.setItem('dataselling_is_auth', JSON.stringify(isAuthenticated));
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    localStorage.setItem('dataselling_economy', JSON.stringify(economy));
   }, [economy]);
 
   useEffect(() => {
-    localStorage.setItem('datarefine_vip_subs', JSON.stringify(vipSubmissions));
+    localStorage.setItem('dataselling_vip_subs', JSON.stringify(vipSubmissions));
   }, [vipSubmissions]);
 
   useEffect(() => {
-    localStorage.setItem('datarefine_withdrawals', JSON.stringify(withdrawals));
+    localStorage.setItem('dataselling_withdrawals', JSON.stringify(withdrawals));
   }, [withdrawals]);
 
   useEffect(() => {
-    localStorage.setItem('datarefine_transactions', JSON.stringify(transactions));
+    localStorage.setItem('dataselling_transactions', JSON.stringify(transactions));
   }, [transactions]);
 
   useEffect(() => {
-    localStorage.setItem('datarefine_announcements', JSON.stringify(announcements));
+    localStorage.setItem('dataselling_announcements', JSON.stringify(announcements));
   }, [announcements]);
 
   const notifyToast = useCallback((message: string, type: 'success' | 'info' | 'error' | 'gold' = 'success') => {
@@ -699,7 +741,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `DataRefine_Payouts_Batch_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `DataSelling_Payouts_Batch_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -710,6 +752,133 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const triggerAIAdvisor = useCallback(() => {
     setShowAIModal(true);
   }, []);
+
+  // Authentication Handlers
+  const login = useCallback((emailOrPhone: string, password: string) => {
+    if (!emailOrPhone.trim() || !password.trim()) {
+      notifyToast('Please enter both identifier (email/phone) and password.', 'error');
+      return { success: false, message: 'Missing login credentials.' };
+    }
+
+    // Check stored user or accept login
+    setIsAuthenticated(true);
+    setUser(prev => ({
+      ...prev,
+      email: emailOrPhone.includes('@') ? emailOrPhone.trim() : prev.email,
+      phone: !emailOrPhone.includes('@') ? emailOrPhone.trim() : prev.phone,
+    }));
+    setAuthModalOpen(false);
+    soundEngine.playClick();
+    notifyToast(`Welcome back, ${user.name}! Node session verified.`, 'success');
+    return { success: true, message: 'Logged in successfully.' };
+  }, [user.name, notifyToast]);
+
+  const register = useCallback((data: { name: string; email: string; phone: string; password: string; upiId?: string; referralCode?: string }) => {
+    if (!data.name.trim() || !data.email.trim() || !data.password.trim() || !data.phone.trim()) {
+      notifyToast('Please fill out all required registration fields.', 'error');
+      return { success: false, message: 'Missing fields.' };
+    }
+
+    const hasReferral = Boolean(data.referralCode && data.referralCode.trim().length > 3);
+    const welcomeBonus = hasReferral ? 25.0 : 10.0;
+
+    const newUser: UserProfile = {
+      id: `usr-ds-${Date.now()}`,
+      name: data.name.trim(),
+      email: data.email.trim(),
+      phone: data.phone.trim(),
+      upiId: data.upiId?.trim() || `${data.phone.trim()}@upi`,
+      password: data.password,
+      tier: 'standard',
+      vipStatus: 'none',
+      balanceINR: welcomeBonus,
+      lifetimeEarningsINR: welcomeBonus,
+      totalDataSharedMB: 0,
+      sessionDataSharedMB: 0,
+      isSharing: false,
+      referralCode: `DS${Math.floor(1000 + Math.random() * 9000)}`,
+      referredBy: hasReferral ? data.referralCode?.trim() : undefined,
+      dailyStreak: 1,
+      soundEnabled: true,
+    };
+
+    setUser(newUser);
+    setIsAuthenticated(true);
+    setAuthModalOpen(false);
+
+    if (hasReferral) {
+      const bonusTx: TransactionRecord = {
+        id: `tx-bonus-${Date.now()}`,
+        type: 'referral_bonus',
+        amountINR: welcomeBonus,
+        timestamp: new Date().toISOString(),
+        description: `Welcome Bonus (Invite Code: ${data.referralCode})`,
+        status: 'completed',
+      };
+      setTransactions(prev => [bonusTx, ...prev]);
+    }
+
+    confetti({
+      particleCount: 60,
+      spread: 70,
+      origin: { y: 0.7 },
+      colors: ['#00FF87', '#D4AF37', '#FFFFFF'],
+    });
+
+    soundEngine.playVIPUnlock();
+    notifyToast(`🎉 Welcome to Data Selling, ${newUser.name}! ₹${welcomeBonus.toFixed(2)} credited!`, 'gold');
+    return { success: true, message: 'Account created successfully.' };
+  }, [notifyToast]);
+
+  const forgotPassword = useCallback((emailOrPhone: string, newPassword?: string) => {
+    if (!emailOrPhone.trim()) {
+      notifyToast('Please enter your registered Email or Mobile Number.', 'error');
+      return { success: false, message: 'Please enter registered contact.' };
+    }
+
+    if (newPassword && newPassword.length >= 6) {
+      setUser(prev => ({ ...prev, password: newPassword }));
+      notifyToast('✅ Password updated successfully! Please sign in with your new password.', 'success');
+      setAuthModalTab('login');
+      return { success: true, message: 'Password reset successful.' };
+    }
+
+    notifyToast(`Verification code sent to ${emailOrPhone}. Use OTP 482910 to confirm.`, 'info');
+    return { success: true, message: 'OTP sent.' };
+  }, [notifyToast]);
+
+  const logout = useCallback(() => {
+    setIsAuthenticated(false);
+    setUser(prev => ({ ...prev, isSharing: false }));
+    setActiveView('user');
+    notifyToast('Logged out safely. Your bandwidth node has been disconnected.', 'info');
+  }, [notifyToast]);
+
+  const updateProfile = useCallback((data: Partial<UserProfile>) => {
+    setUser(prev => ({ ...prev, ...data }));
+    notifyToast('Profile settings updated successfully.', 'success');
+  }, [notifyToast]);
+
+  // Admin Master Password Verification
+  const verifyAdminPassword = useCallback((password: string) => {
+    if (password.trim() === ADMIN_MASTER_KEY) {
+      setIsAdminUnlocked(true);
+      setActiveView('admin');
+      setAdminPasscodeModalOpen(false);
+      soundEngine.playVIPUnlock();
+      notifyToast('🛡️ SUPER ADMIN CLEARANCE GRANTED. Governance console unlocked.', 'gold');
+      return true;
+    } else {
+      notifyToast('❌ Access Denied: Invalid Security Key.', 'error');
+      return false;
+    }
+  }, [notifyToast]);
+
+  const lockAdminPanel = useCallback(() => {
+    setIsAdminUnlocked(false);
+    setActiveView('user');
+    notifyToast('Admin panel locked. Switched to user view.', 'info');
+  }, [notifyToast]);
 
   return (
     <DataContext.Provider
@@ -746,6 +915,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setShowAIModal,
         notifyToast,
         toast,
+        isAuthenticated,
+        authModalOpen,
+        authModalTab,
+        setAuthModalOpen,
+        setAuthModalTab,
+        userProfileModalOpen,
+        setUserProfileModalOpen,
+        login,
+        register,
+        forgotPassword,
+        logout,
+        updateProfile,
+        adminPasscodeModalOpen,
+        setAdminPasscodeModalOpen,
+        isAdminUnlocked,
+        verifyAdminPassword,
+        lockAdminPanel,
       }}
     >
       {children}

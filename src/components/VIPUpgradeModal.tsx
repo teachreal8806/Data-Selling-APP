@@ -27,9 +27,9 @@ export const VIPUpgradeModal: React.FC = () => {
     (s) => (s.userId === user.id || s.userName === user.name) && s.status === 'pending'
   );
 
-  const officialUPI = 'datarefine.nexus@axisbank';
+  const officialUPI = 'dataselling.pay@axisbank';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    `upi://pay?pa=${officialUPI}&pn=DataRefine%20VIP&am=${economy.vipActivationFee}&cu=INR`
+    `upi://pay?pa=${officialUPI}&pn=DataSelling%20VIP&am=${economy.vipActivationFee}&cu=INR`
   )}`;
 
   const handleCopyUPI = () => {

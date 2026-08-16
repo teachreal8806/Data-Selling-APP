@@ -18,7 +18,7 @@ export const ReferralSystem: React.FC = () => {
   const { user, economy, referrals, notifyToast } = useData();
   const [copied, setCopied] = useState(false);
 
-  const referralUrl = `https://datarefine.nexus.io/join?ref=${user.referralCode}`;
+  const referralUrl = `https://dataselling.network/join?ref=${user.referralCode}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralUrl);
@@ -30,8 +30,8 @@ export const ReferralSystem: React.FC = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Join DataRefine Nexus',
-        text: `Monetize your unused internet bandwidth and earn 24/7 UPI cash with DataRefine! Use my invite code: ${user.referralCode}`,
+        title: 'Join Data Selling Network',
+        text: `Monetize your unused internet data and earn 24/7 instant UPI cash with Data Selling! Use my invite code: ${user.referralCode}`,
         url: referralUrl,
       }).catch(() => {});
     } else {

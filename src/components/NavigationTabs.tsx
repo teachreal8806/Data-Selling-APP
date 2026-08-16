@@ -1,12 +1,12 @@
 import React from 'react';
 import {
+  LayoutDashboard,
   Radio,
   Zap,
   Crown,
   Users,
   Wallet,
-  Activity,
-  Sparkles
+  Activity
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
@@ -15,12 +15,13 @@ export const NavigationTabs: React.FC = () => {
   const isVIP = user.tier === 'vip';
 
   const tabs = [
-    { id: 'refinery', label: 'Live Refinery', icon: Radio, badge: user.isSharing ? 'LIVE' : undefined },
+    { id: 'dashboard', label: 'Home Dashboard', icon: LayoutDashboard, badge: user.isSharing ? 'LIVE' : undefined },
+    { id: 'refinery', label: 'Live Mesh', icon: Radio },
     { id: 'quicksell', label: 'Quick Sell', icon: Zap, highlight: true },
-    { id: 'payouts', label: 'Withdrawal', icon: Wallet },
-    { id: 'vip', label: 'VIP Tier', icon: Crown, vipStyle: true, badge: isVIP ? 'PRO' : '₹99' },
+    { id: 'wallet', label: 'Withdrawal', icon: Wallet },
+    { id: 'vip', label: 'VIP Mode', icon: Crown, vipStyle: true, badge: isVIP ? 'PRO' : '₹99' },
     { id: 'referrals', label: '3-Tier Referrals', icon: Users },
-    { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
+    { id: 'diagnostics', label: 'Network Health', icon: Activity },
   ];
 
   return (
@@ -29,7 +30,7 @@ export const NavigationTabs: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (activeTab === 'payouts' && tab.id === 'wallet');
 
           let activeClass = 'bg-[#00FF87] text-[#0A0A0C] font-bold shadow-[0_0_15px_rgba(0,255,135,0.3)]';
           if (tab.vipStyle) {
@@ -66,11 +67,11 @@ export const NavigationTabs: React.FC = () => {
         })}
       </div>
 
-      {/* Mobile Bottom Fixed Nav Bar for Native App Feel */}
+      {/* Mobile Bottom Fixed Nav Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0A0C]/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 flex justify-around items-center">
         {tabs.slice(0, 5).map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (activeTab === 'payouts' && tab.id === 'wallet');
 
           return (
             <button
@@ -96,7 +97,7 @@ export const NavigationTabs: React.FC = () => {
                 <Icon className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-mono font-medium">
-                {tab.id === 'refinery' ? 'Refinery' : tab.id === 'quicksell' ? 'Quick Sell' : tab.id === 'payouts' ? 'Payout' : tab.id === 'vip' ? 'VIP' : 'Refer'}
+                {tab.id === 'dashboard' ? 'Home' : tab.id === 'refinery' ? 'Mesh' : tab.id === 'quicksell' ? 'Quick Sell' : tab.id === 'wallet' ? 'Payout' : 'VIP'}
               </span>
               {tab.badge === 'LIVE' && (
                 <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-[#00FF87] animate-ping" />

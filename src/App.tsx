@@ -2,6 +2,7 @@ import React from 'react';
 import { DataProvider, useData } from './context/DataContext';
 import { Navbar } from './components/Navbar';
 import { NavigationTabs } from './components/NavigationTabs';
+import { ProfessionalDashboard } from './components/ProfessionalDashboard';
 import { LiveSharingController } from './components/LiveSharingController';
 import { QuickSellGrid } from './components/QuickSellGrid';
 import { WithdrawalProgressCard } from './components/WithdrawalProgressCard';
@@ -11,6 +12,9 @@ import { NetworkDiagnostics } from './components/NetworkDiagnostics';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AIAdvisorModal } from './components/AIAdvisorModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { AuthModal } from './components/AuthModal';
+import { UserProfileModal } from './components/UserProfileModal';
+import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import {
   Bell,
   Shield,
@@ -18,7 +22,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
-  ExternalLink,
   Lock,
   Globe
 } from 'lucide-react';
@@ -44,21 +47,21 @@ const MainContent: React.FC = () => {
           <div
             className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs animate-fade-in ${
               activeAnnouncement.type === 'boost'
-                ? 'bg-amber-950/40 border-amber-400/40 text-amber-200'
-                : 'bg-cyan-950/40 border-cyan-400/30 text-cyan-200'
+                ? 'bg-[#181308]/60 border-[#D4AF37]/40 text-[#D4AF37]'
+                : 'bg-[#061710]/60 border-[#00FF87]/30 text-[#00FF87]'
             }`}
           >
             <div className="flex items-center gap-2.5">
               <Bell className="w-4 h-4 shrink-0" />
               <div>
                 <strong className="font-['Space_Grotesk']">{activeAnnouncement.title}</strong>
-                <span className="hidden sm:inline text-slate-300 ml-2 font-mono">
+                <span className="hidden sm:inline text-white/80 ml-2 font-mono">
                   {activeAnnouncement.message}
                 </span>
               </div>
             </div>
             <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/10 shrink-0">
-              Live Broadcast
+              Live Network Notice
             </span>
           </div>
         )}
@@ -72,9 +75,10 @@ const MainContent: React.FC = () => {
             <NavigationTabs />
 
             {/* Tab Views */}
+            {(activeTab === 'dashboard' || !activeTab) && <ProfessionalDashboard />}
             {activeTab === 'refinery' && <LiveSharingController />}
             {activeTab === 'quicksell' && <QuickSellGrid />}
-            {activeTab === 'payouts' && <WithdrawalProgressCard />}
+            {(activeTab === 'payouts' || activeTab === 'wallet') && <WithdrawalProgressCard />}
             {activeTab === 'vip' && <VIPUpgradeModal />}
             {activeTab === 'referrals' && <ReferralSystem />}
             {activeTab === 'diagnostics' && <NetworkDiagnostics />}
@@ -82,8 +86,17 @@ const MainContent: React.FC = () => {
         )}
       </main>
 
-      {/* AI Strategist Modal */}
+      {/* AI Advisor Modal */}
       <AIAdvisorModal />
+
+      {/* User Profile Modal */}
+      <UserProfileModal />
+
+      {/* Authentication Modal (Sign In / Sign Up / Forgot Password) */}
+      <AuthModal />
+
+      {/* Admin Passcode Modal (Password: ADMINPANELDEEPAKSQW) */}
+      <AdminPasscodeModal />
 
       {/* Toast Notification Container */}
       {toast && (
@@ -91,16 +104,16 @@ const MainContent: React.FC = () => {
           <div
             className={`px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl flex items-center gap-2.5 text-xs font-mono max-w-sm ${
               toast.type === 'gold'
-                ? 'bg-[#181308]/95 border-amber-400 text-amber-200 shadow-amber-500/20'
+                ? 'bg-[#181308]/95 border-[#D4AF37] text-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)]'
                 : toast.type === 'error'
                 ? 'bg-[#1c0c0e]/95 border-red-500 text-red-200 shadow-red-500/20'
                 : toast.type === 'info'
                 ? 'bg-[#0a1524]/95 border-cyan-400 text-cyan-200 shadow-cyan-500/20'
-                : 'bg-[#081812]/95 border-[#00FF87] text-[#00FF87] shadow-[#00FF87]/20'
+                : 'bg-[#081812]/95 border-[#00FF87] text-[#00FF87] shadow-[0_0_20px_rgba(0,255,135,0.2)]'
             }`}
           >
             {toast.type === 'gold' ? (
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
             ) : toast.type === 'error' ? (
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             ) : (
@@ -116,11 +129,11 @@ const MainContent: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#00FF87] animate-pulse" />
-            <span className="text-white/60 font-semibold">LUMINA NEXUS ENGINE V2.4.0-STABLE</span>
+            <span className="text-white/60 font-semibold">DATA SELLING AUTONOMOUS ECOSYSTEM V3.0</span>
           </div>
           <div className="flex items-center gap-4 text-[10px] text-white/30 uppercase tracking-wider">
             <span className="flex items-center gap-1">
-              <Lock className="w-3 h-3 text-[#00FF87]" /> PROTECTED BY AES-256 BANK-GRADE ENCRYPTION
+              <Lock className="w-3 h-3 text-[#00FF87]" /> BANK-GRADE 256-BIT ENCRYPTION
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
@@ -128,7 +141,7 @@ const MainContent: React.FC = () => {
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              <Globe className="w-3 h-3 text-cyan-400" /> CONNECTION: HYPER-TUNNEL-MUMBAI-01
+              <Globe className="w-3 h-3 text-cyan-400" /> MUMBAI EDGE CLUSTER #04
             </span>
           </div>
         </div>
